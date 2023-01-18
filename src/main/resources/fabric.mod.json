@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "hamstermod",
+  "version": "0.0.1",
+
+  "name": "Hamster Mod",
+  "description": "This modification provides you with the opportunity to experience hamsters in Minecraft.",
+  "authors": [
+    "BMJO"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+
+  "license": "MIT",
+  "icon": "assets/hamstermod/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.bmjo.hamstermod.HamsterMod"
+    ],
+    "client": [
+      "net.bmjo.hamstermod.HamsterClientMod"
+    ]
+  },
+  "mixins": [
+    "hamstermod.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.14.6",
+    "fabric": "*",
+    "minecraft": "~1.18.2",
+    "java": ">=17"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}

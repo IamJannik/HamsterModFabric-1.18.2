@@ -1,0 +1,29 @@
+{
+	"format_version": "1.8.0",
+	"animations": {
+		"animation.hamster_wheel.spin": {
+			"loop": true,
+			"bones": {
+				"wheel": {
+					"rotation": {
+						"vector": [0, 0, "-math.sin(query.anim_time)*5000"]
+					}
+				}
+			}
+		},
+		"animation.hamster_wheel.idle": {
+			"loop": true
+		},
+		"animation.hamster_wheel.swing": {
+			"loop": true,
+			"bones": {
+				"wheel": {
+					"rotation": {
+						"vector": [0, 0, "math.sin(query.anim_time*50)*5 "]
+					}
+				}
+			}
+		}
+	},
+	"geckolib_format_version": 2
+}

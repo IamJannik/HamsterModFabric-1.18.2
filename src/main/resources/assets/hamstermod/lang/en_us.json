@@ -1,0 +1,17 @@
+{
+  "item.hamstermod.hamster_spawn_egg": "Hamster Spawn Egg",
+  "item.hamstermod.ball_bearing": "Ball Bearing",
+  "item.hamstermod.mealworm": "Mealworm",
+  "item.hamstermod.fidget_spinner": "Fidget Spinner",
+
+  "block.hamstermod.hamster_wheel": "Hamster Wheel",
+  "block.hamstermod.the_cube": "The CUBE",
+
+  "itemGroup.hamstermod.hamster": "Hamster",
+
+  "itemEntity.hamstermod.hamster_wheel": "Hamster Wheel",
+
+  "item.hamstermod.hamster_wheel.tooltip": "Press §eSHIFT§r for more Information",
+  "item.hamstermod.hamster_wheel.tooltip.shift" : "When a §6HAMSTER§r sees this wheel it can't help but spin a few rounds"
+
+}

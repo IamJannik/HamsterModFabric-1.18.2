@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "hamstermod:block/hamster_wheel"
+    },
+    "facing=south": {
+      "model": "hamstermod:block/hamster_wheel",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "hamstermod:block/hamster_wheel",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "hamstermod:block/hamster_wheel",
+      "y": 90
+    }
+  }
+}

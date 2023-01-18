@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " X ",
+    " # ",
+    "X X"
+  ],
+  "key": {
+    "#": {
+      "item": "hamstermod:ball_bearing"
+    },
+    "X": {
+      "item": "minecraft:blue_terracotta"
+    }
+  },
+  "result": {
+    "item": "hamstermod:fidget_spinner"
+  }
+}
