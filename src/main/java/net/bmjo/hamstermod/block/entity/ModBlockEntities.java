@@ -4,7 +4,6 @@ import net.bmjo.hamstermod.HamsterMod;
 import net.bmjo.hamstermod.block.ModBlocks;
 import net.bmjo.hamstermod.block.entity.custom.HamsterWheelBlockEntity;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;

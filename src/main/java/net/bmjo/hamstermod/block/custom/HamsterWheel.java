@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 
 public class HamsterWheel extends BlockWithEntity implements BlockEntityProvider{
     public static final DirectionProperty FACING = Properties.HORIZONTAL_FACING;
-    public static final BooleanProperty USE = BooleanProperty.of("use");
+    public static final BooleanProperty EMPTY = BooleanProperty.of("empty");
 
     public HamsterWheel(Settings settings) {
         super(settings);
@@ -112,7 +112,7 @@ public class HamsterWheel extends BlockWithEntity implements BlockEntityProvider
 
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-        builder.add(FACING, USE);
+        builder.add(FACING, EMPTY);
     }
 
 
@@ -123,18 +123,7 @@ public class HamsterWheel extends BlockWithEntity implements BlockEntityProvider
 
     @Override
     public int getWeakRedstonePower(BlockState state, BlockView world, BlockPos pos, Direction direction) {
-        return state.get(USE) ? 15 : 0;
-    }
-
-    @Override
-    public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
-        if (!world.isClient) {
-            if (entity instanceof LivingEntity) {
-                LivingEntity livingEntity = ((LivingEntity) entity);
-                livingEntity.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 300, 100));
-            }
-        }
-        super.onSteppedOn(world, pos, state, entity);
+        return !state.get(EMPTY) ? 15 : 0;
     }
 
     @Override
@@ -165,8 +154,8 @@ public class HamsterWheel extends BlockWithEntity implements BlockEntityProvider
         if (!world.isClient) {
             NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
             if (hand == Hand.MAIN_HAND) {
-                boolean currentState = state.get(USE);
-                world.setBlockState(pos, state.with(USE, !currentState), Block.NOTIFY_ALL);
+                boolean currentState = state.get(EMPTY);
+                world.setBlockState(pos, state.with(EMPTY, !currentState), Block.NOTIFY_ALL);
             }
             if (screenHandlerFactory != null) {
                 player.openHandledScreen(screenHandlerFactory);

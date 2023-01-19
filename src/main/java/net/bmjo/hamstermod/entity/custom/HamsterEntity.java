@@ -9,6 +9,7 @@ import net.bmjo.hamstermod.entity.ModEntities;
 import net.bmjo.hamstermod.entity.variant.HamsterVariant;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
@@ -22,6 +23,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
+import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -108,8 +110,10 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         this.goalSelector.add(1, new EscapeDangerGoal(this, 1.25));
         this.goalSelector.add(2, new HamsterEntity.EnterWheelGoal());
         this.goalSelector.add(3, new HamsterEntity.FindWheelGoal());
+        this.goalSelector.add(3, new FollowParentGoal(this, 1));
         this.moveToWheelGoal = new HamsterEntity.MoveToWheelGoal();
         this.goalSelector.add(4, this.moveToWheelGoal);
+        this.goalSelector.add(4, new FollowOwnerGoal(this, 1.0, 10.0f, 2.0f, false));
         this.goalSelector.add(5, new WanderAroundPointOfInterestGoal(this, 0.75f, false));
         this.goalSelector.add(6, new SitGoal(this));
         this.goalSelector.add(7, new WanderAroundFarGoal(this, 0.75f, 1));
@@ -358,7 +362,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     }
 
     boolean canEnterWheel() {
-        if (this.cannotEnterWheelTicks > 0 || this.isSitting()) {
+        if (this.cannotEnterWheelTicks > 0 || this.isSitting() || this.isBaby()) {
             return false;
         }
         return true;
@@ -388,16 +392,15 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
         @Override
         public boolean canStart() {
-            if (HamsterEntity.this.hasWheel() && HamsterEntity.this.canEnterWheel() && HamsterEntity.this.wheelPos.isWithinDistance(HamsterEntity.this.getPos(), 2.0)) {
-                BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.getWheelPos());
-                if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
-                    if (!hamsterWheelBlockEntity.isFull()) {
-                        return true;
-                    }
+            BlockEntity blockEntity;
+            if (HamsterEntity.this.hasWheel() && HamsterEntity.this.canEnterWheel() && HamsterEntity.this.wheelPos.isWithinDistance(HamsterEntity.this.getPos(), 2.0) && (blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.wheelPos)) instanceof HamsterWheelBlockEntity) {
+                HamsterWheelBlockEntity hamsterWheelBlockEntity = (HamsterWheelBlockEntity)blockEntity;
+                if (hamsterWheelBlockEntity.isFull()) {
                     HamsterEntity.this.wheelPos = null;
+                } else {
+                    return true;
                 }
             }
-
             return false;
         }
 
@@ -408,11 +411,10 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
         @Override
         public void start() {
-            BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.getWheelPos());
+            BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.wheelPos);
             if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
                 hamsterWheelBlockEntity.tryEnterWheel(HamsterEntity.this, endurance);
             }
-
         }
     }
 
@@ -493,7 +495,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
         @Override
         public boolean canStart() {
-            return HamsterEntity.this.wheelPos != null && !HamsterEntity.this.hasPositionTarget() && HamsterEntity.this.canEnterWheel() && !this.isCloseEnough(HamsterEntity.this.wheelPos); // TODO entfernt  && HamsterEntity.this.world.getBlockState(HamsterEntity.this.wheelPos).isIn(BlockTags.BEEWheelS)
+            return HamsterEntity.this.wheelPos != null && !HamsterEntity.this.hasPositionTarget() && HamsterEntity.this.canEnterWheel() && !this.isCloseEnough(HamsterEntity.this.wheelPos);
         }
 
         @Override
