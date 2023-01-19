@@ -1,14 +1,15 @@
 package net.bmjo.hamstermod.entity.custom;
 
 import com.google.common.collect.Lists;
+import net.bmjo.hamstermod.block.ModBlocks;
 import net.bmjo.hamstermod.block.entity.ModBlockEntities;
+import net.bmjo.hamstermod.block.entity.custom.HamsterWheelBlockEntity;
 import net.bmjo.hamstermod.item.ModItems;
 import net.bmjo.hamstermod.entity.ModEntities;
 import net.bmjo.hamstermod.entity.variant.HamsterVariant;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
@@ -21,13 +22,13 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtHelper;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
@@ -41,9 +42,6 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LocalDifficulty;
 import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
-import net.minecraft.world.poi.PointOfInterest;
-import net.minecraft.world.poi.PointOfInterestStorage;
-import net.minecraft.world.poi.PointOfInterestType;
 import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
@@ -53,26 +51,35 @@ import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
 import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
 
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.*;
 
 public class HamsterEntity extends TameableEntity implements IAnimatable {
+
+    public static final String SITTING_KEY = "IsSitting";
+    public static final String VARIANT_KEY = "Variant";
+    public static final String WHEEL_POS_KEY = "WheelPos";
+    public static final String ENDURANCE_KEY = "Endurance";
+    public static final String CANNOT_ENTER_WHEEL_TICKS_KEY = "CannotEnterWheelTicks";
+
     private AnimationFactory factory = new AnimationFactory(this);
+    @Nullable
+    private BlockPos wheelPos;
+    int endurance;
     private int cannotEnterWheelTicks;
     int ticksLeftToFindWheel;
-    @Nullable
-    BlockPos wheelPos;
     MoveToWheelGoal moveToWheelGoal;
+
     public HamsterEntity(EntityType<? extends TameableEntity> entityType, World world) {
         super(entityType, world);
     }
 
     /* GETTER AND SETTER */
 
-
+    @Nullable
+    @Debug
+    public BlockPos getWheelPos() {
+        return this.wheelPos;
+    }
 
     /* METHODS */
 
@@ -128,8 +135,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
     @Override
     public void registerControllers(AnimationData animationData) {
-        animationData.addAnimationController(new AnimationController(this, "controller",
-                0, this::predicate));
+        animationData.addAnimationController(new AnimationController(this, "controller",0, this::predicate));
     }
 
     @Override
@@ -149,7 +155,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.ENTITY_PIG_DEATH;
+        return SoundEvents.ENTITY_DOLPHIN_DEATH;
     }
 
     @Override
@@ -226,15 +232,29 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
         super.writeCustomDataToNbt(nbt);
-        nbt.putBoolean("isSitting", this.dataTracker.get(SITTING));
-        nbt.putInt("Variant", this.getTypeVariant());
+        nbt.putBoolean(SITTING_KEY, this.dataTracker.get(SITTING));
+        nbt.putInt(VARIANT_KEY, this.getTypeVariant());
+
+        if (this.hasWheel()) {
+            nbt.put(WHEEL_POS_KEY, NbtHelper.fromBlockPos(getWheelPos()));
+        }
+        nbt.putInt(ENDURANCE_KEY, this.endurance);
+        nbt.putInt(CANNOT_ENTER_WHEEL_TICKS_KEY, this.cannotEnterWheelTicks);
     }
 
     @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
+        this.wheelPos = null;
         super.readCustomDataFromNbt(nbt);
-        this.dataTracker.set(SITTING, nbt.getBoolean("isSitting"));
-        this.dataTracker.set(DATA_ID_TYPE_VARIANT, nbt.getInt("Variant"));
+
+        this.dataTracker.set(SITTING, nbt.getBoolean(SITTING_KEY));
+        this.dataTracker.set(DATA_ID_TYPE_VARIANT, nbt.getInt(VARIANT_KEY));
+
+        if (nbt.contains(WHEEL_POS_KEY)) {
+            this.wheelPos = NbtHelper.toBlockPos(nbt.getCompound(WHEEL_POS_KEY));
+        }
+        this.endurance = nbt.getInt(ENDURANCE_KEY);
+        this.cannotEnterWheelTicks = nbt.getInt(CANNOT_ENTER_WHEEL_TICKS_KEY);
     }
 
     @Override
@@ -290,6 +310,9 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
             if (this.ticksLeftToFindWheel > 0) {
                 --this.ticksLeftToFindWheel;
             }
+            if (this.endurance < 1000) {
+                ++this.endurance;
+            }
             if (this.age % 20 == 0 && !this.isWheelValid()) {
                 this.wheelPos = null;
             }
@@ -326,7 +349,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         if (!this.hasWheel()) {
             return false;
         }
-        BlockEntity blockEntity = this.world.getBlockEntity(this.wheelPos);
+        BlockEntity blockEntity = this.world.getBlockEntity(getWheelPos());
         return blockEntity != null && blockEntity.getType() == ModBlockEntities.HAMSTER_WHEEL;
     }
 
@@ -343,8 +366,8 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
     private boolean doesWheelHaveSpace(BlockPos pos) { //TODO
         BlockEntity blockEntity = this.world.getBlockEntity(pos);
-        if (blockEntity instanceof BeehiveBlockEntity) {
-            return !((BeehiveBlockEntity)blockEntity).isFullOfBees();
+        if (blockEntity instanceof HamsterWheelBlockEntity) {
+            return !((HamsterWheelBlockEntity)blockEntity).isFull();
         } else {
             return false;
         }
@@ -366,13 +389,11 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         @Override
         public boolean canStart() {
             if (HamsterEntity.this.hasWheel() && HamsterEntity.this.canEnterWheel() && HamsterEntity.this.wheelPos.isWithinDistance(HamsterEntity.this.getPos(), 2.0)) {
-                BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.wheelPos);
-                if (blockEntity instanceof BeehiveBlockEntity) {
-                    BeehiveBlockEntity beehiveBlockEntity = (BeehiveBlockEntity)blockEntity;
-                    if (!beehiveBlockEntity.isFullOfBees()) {
+                BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.getWheelPos());
+                if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
+                    if (!hamsterWheelBlockEntity.isFull()) {
                         return true;
                     }
-
                     HamsterEntity.this.wheelPos = null;
                 }
             }
@@ -387,9 +408,9 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
         @Override
         public void start() {
-            BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.wheelPos);
-            if (blockEntity instanceof BeehiveBlockEntity beehiveBlockEntity) {
-                beehiveBlockEntity.tryEnterHive(HamsterEntity.this, false);
+            BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.getWheelPos());
+            if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
+                hamsterWheelBlockEntity.tryEnterWheel(HamsterEntity.this, endurance);
             }
 
         }
@@ -414,8 +435,8 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         @Override
         public void start() {
             HamsterEntity.this.ticksLeftToFindWheel = 200;
-            List<BlockPos> list = this.getNearbyFreeWheels();
-            if (list.isEmpty()) {
+            ArrayList<BlockPos> list = this.getNearbyFreeWheels();
+            if (list == null || list.isEmpty()) {
                 return;
             }
             for (BlockPos blockPos : list) {
@@ -427,27 +448,41 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
             HamsterEntity.this.wheelPos = list.get(0);
         }
 
-        private List<BlockPos> getNearbyFreeWheels() { //TODO to Wheel
-            BlockPos blockPos = HamsterEntity.this.getBlockPos();
-            PointOfInterestStorage pointOfInterestStorage = ((ServerWorld)HamsterEntity.this.world).getPointOfInterestStorage();
-            Stream<PointOfInterest> stream = pointOfInterestStorage.getInCircle((poiType) -> {
-                return poiType == PointOfInterestType.BEEHIVE || poiType == PointOfInterestType.BEE_NEST;
-            }, blockPos, 20, PointOfInterestStorage.OccupationStatus.ANY);
-            return (List)stream.map(PointOfInterest::getPos).filter(HamsterEntity.this::doesWheelHaveSpace).sorted(Comparator.comparingDouble((blockPos2) -> {
-                return blockPos2.getSquaredDistance(blockPos);
-            })).collect(Collectors.toList());
+        private ArrayList<BlockPos> getNearbyFreeWheels() { //TODO to Wheel
+
+            if (!getWorld().isClient()) {
+                BlockPos hamsterPos = HamsterEntity.this.getBlockPos();
+                ArrayList<BlockPos> wheels = new ArrayList<>();
+                boolean foundWheel = false;
+
+                for (int x = -16; x <= 16; x++) {
+                    for (int y = -16; y < 16; y++) {
+                        for (int z = -16; z < 16; z++) {
+                            BlockPos blockPos = new BlockPos(x,y,z).add(hamsterPos);
+                            Block block = getWorld().getBlockState(blockPos).getBlock();
+
+                            if(block == ModBlocks.HAMSTER_WHEEL && doesWheelHaveSpace(blockPos)) {
+                                foundWheel = true;
+                                wheels.add(blockPos);
+                            }
+                        }
+                    }
+                }
+                if (foundWheel) {
+                    return wheels;
+                }
+            }
+
+            return null;
         }
     }
 
     @Debug
     public class MoveToWheelGoal extends Goal {
-        public static final int field_30295 = 600;
         int ticks;
-        private static final int field_30296 = 3;
         final List<BlockPos> possibleWheels;
         @Nullable
         private Path path;
-        private static final int field_30297 = 60;
         private int ticksUntilLost;
 
         MoveToWheelGoal() {
@@ -487,7 +522,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
                 return;
             }
             ++this.ticks;
-            if (this.ticks > this.getTickCount(600)) {
+            if (this.ticks > this.getTickCount(200)) {
                 this.makeChosenWheelPossibleWheel();
                 return;
             }
