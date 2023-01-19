@@ -2,27 +2,15 @@ package net.bmjo.hamstermod.block.custom;
 
 import net.bmjo.hamstermod.block.entity.ModBlockEntities;
 import net.bmjo.hamstermod.block.entity.custom.HamsterWheelBlockEntity;
-import net.bmjo.hamstermod.entity.custom.HamsterEntity;
-import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.*;
-import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.item.TooltipContext;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
@@ -168,8 +156,7 @@ public class HamsterWheel extends BlockWithEntity implements BlockEntityProvider
     public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (state.getBlock() != newState.getBlock()) {
             BlockEntity blockEntity = world.getBlockEntity(pos);
-            if (!world.isClient && blockEntity instanceof HamsterWheelBlockEntity) {
-                HamsterWheelBlockEntity hamsterWheelBlockEntity = (HamsterWheelBlockEntity)blockEntity;
+            if (!world.isClient && blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
                 hamsterWheelBlockEntity.tryReleaseHamster(state, true);
                 world.updateNeighbors(pos, state.getBlock());
             }

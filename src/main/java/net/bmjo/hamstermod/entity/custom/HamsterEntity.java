@@ -9,7 +9,6 @@ import net.bmjo.hamstermod.entity.ModEntities;
 import net.bmjo.hamstermod.entity.variant.HamsterVariant;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BeehiveBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
@@ -23,7 +22,6 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.passive.BeeEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -366,13 +364,10 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     }
 
     boolean canEnterWheel() {
-        if (this.cannotEnterWheelTicks > 0 || this.isSitting() || this.isBaby()) {
-            return false;
-        }
-        return true;
+        return this.cannotEnterWheelTicks <= 0 && !this.isSitting() && !this.isBaby();
     }
 
-    private boolean doesWheelHaveSpace(BlockPos pos) { //TODO
+    private boolean doesWheelHaveSpace(BlockPos pos) {
         BlockEntity blockEntity = this.world.getBlockEntity(pos);
         if (blockEntity instanceof HamsterWheelBlockEntity) {
             return !((HamsterWheelBlockEntity)blockEntity).isFull();
