@@ -2,6 +2,7 @@ package net.bmjo.hamstermod.block.custom;
 
 import net.bmjo.hamstermod.block.entity.ModBlockEntities;
 import net.bmjo.hamstermod.block.entity.custom.HamsterWheelBlockEntity;
+import net.bmjo.hamstermod.entity.custom.HamsterEntity;
 import net.minecraft.advancement.criterion.Criteria;
 import net.minecraft.block.*;
 import net.minecraft.block.entity.BeehiveBlockEntity;
@@ -149,16 +150,14 @@ public class HamsterWheel extends BlockWithEntity implements BlockEntityProvider
     }
 
     @Override
-    public ActionResult onUse(BlockState state, World world, BlockPos pos,
-                              PlayerEntity player, Hand hand, BlockHitResult hit) {
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (!world.isClient) {
-            NamedScreenHandlerFactory screenHandlerFactory = state.createScreenHandlerFactory(world, pos);
             if (hand == Hand.MAIN_HAND) {
-                boolean currentState = state.get(EMPTY);
-                world.setBlockState(pos, state.with(EMPTY, !currentState), Block.NOTIFY_ALL);
-            }
-            if (screenHandlerFactory != null) {
-                player.openHandledScreen(screenHandlerFactory);
+                world.setBlockState(pos, state.with(EMPTY, true), Block.NOTIFY_ALL);
+                BlockEntity blockEntity = world.getBlockEntity(pos);
+                if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
+                    hamsterWheelBlockEntity.tryReleaseHamster(state, true);
+                }
             }
         }
 

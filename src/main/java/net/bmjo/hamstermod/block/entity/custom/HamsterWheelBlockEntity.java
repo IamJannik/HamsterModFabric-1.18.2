@@ -5,9 +5,7 @@ import net.bmjo.hamstermod.block.ModBlocks;
 import net.bmjo.hamstermod.block.custom.HamsterWheel;
 import net.bmjo.hamstermod.entity.custom.HamsterEntity;
 import net.bmjo.hamstermod.block.entity.ModBlockEntities;
-import net.minecraft.block.BeehiveBlock;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -35,13 +33,11 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     public static final String ENTITY_DATA_KEY = "EntityData";
     public static final String ENDURANCE_KEY = "Endurance";
     public static final String HAMSTER_KEY = "Hamster";
-    private AnimationFactory factory = new AnimationFactory(this);
+    private final AnimationFactory factory = new AnimationFactory(this);
     private Hamster hamster;
-    private boolean test;
 
     public HamsterWheelBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.HAMSTER_WHEEL, pos, state);
-        test = false;
     }
 
     @Override
@@ -66,24 +62,36 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     @Override
     public void readNbt(NbtCompound nbt) {
         super.readNbt(nbt);
-        System.out.println("readNBT NULL");
         this.hamster = null;
         NbtList nbtList = nbt.getList(HAMSTER_KEY, 10);
         for (int i = 0; i < nbtList.size(); ++i) {
             NbtCompound nbtCompound = nbtList.getCompound(i);
-            HamsterWheelBlockEntity.Hamster hamster = new HamsterWheelBlockEntity.Hamster(nbtCompound.getCompound(ENTITY_DATA_KEY), nbtCompound.getInt(ENDURANCE_KEY));
-            this.hamster = hamster;
+            this.hamster = new Hamster(nbtCompound.getCompound(ENTITY_DATA_KEY), nbtCompound.getInt(ENDURANCE_KEY));
         }
     }
 
     public static void tick(World world, BlockPos pos, BlockState state, HamsterWheelBlockEntity entity) {
+        HamsterWheelBlockEntity.tickHamster(world, pos, state, entity);
     }
+
+    private static void tickHamster(World world, BlockPos pos, BlockState state, HamsterWheelBlockEntity entity) {
+            if (entity.hamster != null) {
+                ArrayList<Entity> list = Lists.newArrayList();
+                if (entity.hamster.endurance < 1000 && HamsterWheelBlockEntity.releaseHamster(world, pos, state, entity.hamster, list, false)) {
+                    entity.hamster = null;
+                    if (world != null) {
+                        world.setBlockState(pos, world.getBlockState(pos).with(HamsterWheel.EMPTY, true));
+                    }
+                    return;
+                }
+                System.out.println("ENDURANCE");
+                entity.hamster.endurance--;
+            }
+    }
+
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
         BlockState blockState = world.getBlockState(pos);
-        if (blockState.getBlock() == ModBlocks.HAMSTER_WHEEL) {
-            System.out.println(blockState.get(HamsterWheel.EMPTY));
-        }
         if (blockState.getBlock() == ModBlocks.HAMSTER_WHEEL && !blockState.get(HamsterWheel.EMPTY)) {
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster_wheel.spin", true));
             return PlayState.CONTINUE;
@@ -104,19 +112,14 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
         return this.hamster != null;
     }
 
-    public List<Entity> tryReleaseHamster(BlockState state, boolean isBroken) {
+    public void tryReleaseHamster(BlockState state, boolean urgent) {
         ArrayList<Entity> list = Lists.newArrayList();
-        if (releaseHamster(this.world, this.pos, state, hamster, list, isBroken)) {
+        if (releaseHamster(this.world, this.pos, state, hamster, list, urgent)) {
             hamster = null;
             if (world != null) {
                 world.setBlockState(pos, world.getBlockState(pos).with(HamsterWheel.EMPTY, true));
             }
         }
-        return list;
-    }
-
-    public void tryEnterWheel(Entity entity) {
-        this.tryEnterWheel(entity, 0);
     }
 
     public void tryEnterWheel(Entity entity, int endurance) {
@@ -141,9 +144,9 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
 
     }
 
-    private static boolean releaseHamster(World world, BlockPos pos, BlockState state2, Hamster hamster, @Nullable List<Entity> entities, boolean isBroke) {
+    private static boolean releaseHamster(World world, BlockPos pos, BlockState state2, Hamster hamster, @Nullable List<Entity> entities, boolean urgent) {
         boolean bl;
-        if (!isBroke  && hamster.endurance > 1000 || hamster == null) {
+        if (hamster == null || !urgent  && hamster.endurance > 1000 ) {
             return false;
         }
         NbtCompound nbtCompound = hamster.entityData.copy();
@@ -151,13 +154,12 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
         Direction direction = state2.get(HamsterWheel.FACING);
         BlockPos blockPos = pos.offset(direction);
         bl = !world.getBlockState(blockPos).getCollisionShape(world, blockPos).isEmpty();
-        if (bl && !isBroke) {
+        if (bl && !urgent) {
             return false;
         }
         Entity entity2 = EntityType.loadEntityWithPassengers(nbtCompound, world, entity -> entity);
         if (entity2 != null) {
-            if (entity2 instanceof HamsterEntity) {
-                HamsterEntity hamsterEntity = (HamsterEntity)entity2;
+            if (entity2 instanceof HamsterEntity hamsterEntity) {
                 if (entities != null) {
                     entities.add(hamsterEntity);
                 }
@@ -179,7 +181,6 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
         int endurance;
 
         Hamster(NbtCompound entityData, int endurance) {
-            System.out.println("HAMSTER");
             this.entityData = entityData;
             this.endurance = endurance;
         }

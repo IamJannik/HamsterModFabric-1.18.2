@@ -66,7 +66,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     private AnimationFactory factory = new AnimationFactory(this);
     @Nullable
     private BlockPos wheelPos;
-    int endurance;
+    int endurance = 2000;
     private int cannotEnterWheelTicks;
     int ticksLeftToFindWheel;
     MoveToWheelGoal moveToWheelGoal;
@@ -81,6 +81,10 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     @Debug
     public BlockPos getWheelPos() {
         return this.wheelPos;
+    }
+
+    public void setCannotEnterWheelTicks(int cannotEnterWheelTicks) {
+        this.cannotEnterWheelTicks = cannotEnterWheelTicks;
     }
 
     /* METHODS */
@@ -314,7 +318,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
             if (this.ticksLeftToFindWheel > 0) {
                 --this.ticksLeftToFindWheel;
             }
-            if (this.endurance < 1000) {
+            if (this.endurance < 2000) {
                 ++this.endurance;
             }
             if (this.age % 20 == 0 && !this.isWheelValid()) {
@@ -393,7 +397,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         @Override
         public boolean canStart() {
             BlockEntity blockEntity;
-            if (HamsterEntity.this.hasWheel() && HamsterEntity.this.canEnterWheel() && HamsterEntity.this.wheelPos.isWithinDistance(HamsterEntity.this.getPos(), 2.0) && (blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.wheelPos)) instanceof HamsterWheelBlockEntity) {
+            if (HamsterEntity.this.hasWheel() && HamsterEntity.this.canEnterWheel() && HamsterEntity.this.wheelPos.isWithinDistance(HamsterEntity.this.getPos(), 2.0) && (blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.wheelPos)) instanceof HamsterWheelBlockEntity && endurance > 1500) {
                 HamsterWheelBlockEntity hamsterWheelBlockEntity = (HamsterWheelBlockEntity)blockEntity;
                 if (hamsterWheelBlockEntity.isFull()) {
                     HamsterEntity.this.wheelPos = null;
@@ -413,6 +417,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         public void start() {
             BlockEntity blockEntity = HamsterEntity.this.world.getBlockEntity(HamsterEntity.this.wheelPos);
             if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
+                setCannotEnterWheelTicks(600);
                 hamsterWheelBlockEntity.tryEnterWheel(HamsterEntity.this, endurance);
             }
         }
@@ -495,7 +500,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
         @Override
         public boolean canStart() {
-            return HamsterEntity.this.wheelPos != null && !HamsterEntity.this.hasPositionTarget() && HamsterEntity.this.canEnterWheel() && !this.isCloseEnough(HamsterEntity.this.wheelPos);
+            return HamsterEntity.this.wheelPos != null && !HamsterEntity.this.hasPositionTarget() && HamsterEntity.this.canEnterWheel() && HamsterEntity.this.endurance > 1500 && !this.isCloseEnough(HamsterEntity.this.wheelPos);
         }
 
         @Override
