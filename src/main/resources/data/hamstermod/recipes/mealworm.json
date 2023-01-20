@@ -1,15 +1,12 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " X",
-    "X "
-  ],
-  "key": {
-    "X": {
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
       "item": "minecraft:wheat"
     }
-  },
+  ],
   "result": {
-    "item": "hamstermod:mealworm"
+    "item": "hamstermod:mealworm",
+    "count": 2
   }
 }
