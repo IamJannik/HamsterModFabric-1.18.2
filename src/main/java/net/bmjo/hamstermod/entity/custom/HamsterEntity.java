@@ -62,7 +62,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     public static final String ENDURANCE_KEY = "Endurance";
     public static final String CANNOT_ENTER_WHEEL_TICKS_KEY = "CannotEnterWheelTicks";
 
-    private AnimationFactory factory = new AnimationFactory(this);
+    private final AnimationFactory factory = new AnimationFactory(this);
 
     @Nullable
     private BlockPos wheelPos;
@@ -104,6 +104,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     public PassiveEntity createChild(ServerWorld world, PassiveEntity entity) {
         HamsterEntity baby = ModEntities.HAMSTER.create(world);
         HamsterVariant variant = Util.getRandom(HamsterVariant.values(), this.random);
+        assert baby != null;
         baby.setVariant(variant);
         return baby;
     }
@@ -215,7 +216,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
         Item itemForTaming = ModItems.MEALWORM;
 
-        if(isBreedingItem(itemstack) && getBreedingAge() == 0) {
+        if(isBreedingItem(itemstack) && getBreedingAge() == 0 && !isInLove()) {
             return super.interactMob(player, hand);
         }
 
@@ -237,6 +238,16 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
                 return ActionResult.SUCCESS;
             }
+        }
+
+        if (item == itemForTaming) {
+            if (!player.getAbilities().creativeMode) {
+                itemstack.decrement(1);
+            }
+            if (!this.world.isClient()) {
+                this.cannotEnterWheelTicks = 0;
+            }
+            return ActionResult.SUCCESS;
         }
 
         if(isTamed() && !this.world.isClient() && hand == Hand.MAIN_HAND) {
@@ -264,9 +275,9 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     public void setTamed(boolean tamed) {
         super.setTamed(tamed);
         if (tamed) {
-            getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(20.0D);
+            Objects.requireNonNull(getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH)).setBaseValue(20.0D);
         } else {
-            getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH).setBaseValue(10.0D);
+            Objects.requireNonNull(getAttributeInstance(EntityAttributes.GENERIC_MAX_HEALTH)).setBaseValue(10.0D);
         }
     }
 
@@ -278,6 +289,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         nbt.putBoolean(IN_WHEEL_KEY, this.dataTracker.get(IN_WHEEL));
 
         if (this.hasWheel()) {
+            assert getWheelPos() != null;
             nbt.put(WHEEL_POS_KEY, NbtHelper.fromBlockPos(getWheelPos()));
         }
         nbt.putInt(ENDURANCE_KEY, this.endurance);

@@ -1,9 +1,7 @@
 package net.bmjo.hamstermod.block.entity.custom;
 
-import com.google.common.collect.Lists;
 import net.bmjo.hamstermod.block.ModBlocks;
 import net.bmjo.hamstermod.block.custom.HamsterWheel;
-import net.bmjo.hamstermod.entity.ModEntities;
 import net.bmjo.hamstermod.entity.custom.HamsterEntity;
 import net.bmjo.hamstermod.block.entity.ModBlockEntities;
 import net.minecraft.block.BlockState;
@@ -12,16 +10,12 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.TargetPredicate;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtHelper;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
 import software.bernie.geckolib3.core.builder.AnimationBuilder;
@@ -30,12 +24,9 @@ import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
 import software.bernie.geckolib3.core.manager.AnimationData;
 import software.bernie.geckolib3.core.manager.AnimationFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.Objects;
 
 public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable {
-    public static final String ENTITY_DATA_KEY = "EntityData";
     public static final String ENDURANCE_KEY = "Endurance";
     public static final String HAMSTER_KEY = "Hamster";
     private final AnimationFactory factory = new AnimationFactory(this);
@@ -53,11 +44,14 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
 
     private static void tickHamster(World world, BlockPos pos, BlockState state, HamsterWheelBlockEntity entity) {
             if (entity.hamster) {
-                ArrayList<Entity> list = Lists.newArrayList();
-                if (entity.endurance < 250 && HamsterWheelBlockEntity.releaseHamster(world, pos, state, entity.hamster, list, false)) {
+                if (entity.endurance < 500) {
+                    HamsterWheelBlockEntity.releaseHamster(world, pos, state, entity.hamster, true);
                     entity.hamster = false;
-                    if (world != null) {
-                        world.setBlockState(pos, world.getBlockState(pos).with(HamsterWheel.EMPTY, true));
+                    entity.endurance = 0;
+                    assert world != null;
+                    BlockState blockState = world.getBlockState(pos);
+                    if (blockState.getBlock() == ModBlocks.HAMSTER_WHEEL) {
+                        world.setBlockState(pos, blockState.with(HamsterWheel.EMPTY, true));
                     }
                     return;
                 }
@@ -83,6 +77,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     }
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
+        assert world != null;
         BlockState blockState = world.getBlockState(pos);
         if (blockState.getBlock() == ModBlocks.HAMSTER_WHEEL && !blockState.get(HamsterWheel.EMPTY)) {
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster_wheel.spin", true));
@@ -101,7 +96,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     /* HAMSTER STUFF */
 
     public void tryEnterWheel(HamsterEntity hamster, int endurance) {
-        if (this.hamster || world.getBlockState(pos).getBlock() != ModBlocks.HAMSTER_WHEEL && endurance > 1500) {
+        if (this.hamster || Objects.requireNonNull(world).getBlockState(pos).getBlock() != ModBlocks.HAMSTER_WHEEL && endurance > 1500) {
             return;
         }
         hamster.stopRiding();
@@ -117,7 +112,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
                 Direction direction = blockState.get(HamsterWheel.FACING);
 
                 double x = (double)pos.getX() + 0.5;
-                double y = (double)pos.getY() + 0.15;
+                double y = (double)pos.getY() + 0.175;
                 double z = (double)pos.getZ() + 0.5;
                 float yaw;
                 float pitch = 0f;
@@ -144,15 +139,16 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     public void addHamster(HamsterEntity hamster, int endurance) {
         this.hamster = true;
         this.endurance = endurance;
+        assert world != null;
         world.setBlockState(pos, world.getBlockState(pos).with(HamsterWheel.EMPTY, false));
 
     }
 
     public void tryReleaseHamster(BlockState state, boolean urgent) {
-        ArrayList<Entity> list = Lists.newArrayList();
-        if (releaseHamster(this.world, this.pos, state, hamster, list, urgent)) {
+        if (releaseHamster(this.world, this.pos, state, hamster, urgent)) {
             hamster = false;
             endurance = 0;
+            assert world != null;
             BlockState blockState = world.getBlockState(pos);
             if (world != null && blockState.getBlock() == ModBlocks.HAMSTER_WHEEL) {
                 world.setBlockState(pos, blockState.with(HamsterWheel.EMPTY, true));
@@ -160,7 +156,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
         }
     }
 
-    private static boolean releaseHamster(World world, BlockPos pos, BlockState state, boolean hamsterBoolean, @Nullable List<Entity> entities, boolean urgent) {
+    private static boolean releaseHamster(World world, BlockPos pos, BlockState state, boolean hamsterBoolean, boolean urgent) {
         boolean bl;
         if (!hamsterBoolean || !urgent ) {
             return false;
@@ -169,15 +165,14 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
         BlockPos blockPos = pos.offset(direction);
         bl = !world.getBlockState(blockPos).getCollisionShape(world, blockPos).isEmpty();
 
-
-        if (bl && !urgent) {
+        if (bl) {
             return false;
         }
 
         Entity entity = world.getClosestEntity(HamsterEntity.class, TargetPredicate.createNonAttackable().setBaseMaxDistance(6.0), null, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.2, new Box(pos.getX() + 0.5, pos.getY(), pos.getZ(), pos.getX() +1 , pos.getY() + 1, pos.getZ() + 1));
         if(entity instanceof HamsterEntity hamster) {
             float f = hamster.getWidth();
-            double d = bl ? 0.0 : 0.55 + (double)(f / 2.0f);
+            double d = 0.55 + (double)(f / 2.0f);
             double e = (double)pos.getX() + 0.5 + d * (double)direction.getOffsetX();
             double g = (double)pos.getY() + 0.5 - (double)(hamster.getHeight() / 2.0f);
             double h = (double)pos.getZ() + 0.5 + d * (double)direction.getOffsetZ();

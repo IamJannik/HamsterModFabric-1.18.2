@@ -1,13 +1,16 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "XXX",
+    " X ",
     "X#X",
-    "XXX"
+    "OXO"
   ],
   "key": {
     "X": {
       "item": "minecraft:oak_planks"
+    },
+    "EO": {
+      "item": "minecraft:oak_slab"
     },
     "#": {
       "item": "hamstermod:ball_bearing"
