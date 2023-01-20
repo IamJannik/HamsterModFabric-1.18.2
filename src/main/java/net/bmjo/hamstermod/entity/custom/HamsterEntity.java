@@ -139,7 +139,11 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     }
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
-        if (event.isMoving() || isInWheel()) {
+        if (isInWheel()) {
+            event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster.run", true));
+            return PlayState.CONTINUE;
+        }
+        if (event.isMoving()) {
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster.walk", true));
             return PlayState.CONTINUE;
         }
@@ -148,7 +152,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
             return PlayState.CONTINUE;
         }
 
-        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster.walk", true)); //TODO
+        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster.idle", true));
         return PlayState.CONTINUE;
     }
 
@@ -487,7 +491,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
             HamsterEntity.this.wheelPos = list.get(0);
         }
 
-        private ArrayList<BlockPos> getNearbyFreeWheels() { //TODO to Wheel
+        private ArrayList<BlockPos> getNearbyFreeWheels() {
 
             if (!getWorld().isClient()) {
                 BlockPos hamsterPos = HamsterEntity.this.getBlockPos();

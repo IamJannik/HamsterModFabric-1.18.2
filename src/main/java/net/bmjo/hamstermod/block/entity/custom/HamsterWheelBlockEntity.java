@@ -40,6 +40,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     public static final String HAMSTER_KEY = "Hamster";
     private final AnimationFactory factory = new AnimationFactory(this);
     private boolean hamster;
+    private int endurance;
 
     public HamsterWheelBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.HAMSTER_WHEEL, pos, state);
@@ -47,20 +48,20 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     }
 
     public static void tick(World world, BlockPos pos, BlockState state, HamsterWheelBlockEntity entity) {
-        HamsterWheelBlockEntity.tickHamster(world, pos, state, entity); //TODO
+        HamsterWheelBlockEntity.tickHamster(world, pos, state, entity);
     }
 
-    private static void tickHamster(World world, BlockPos pos, BlockState state, HamsterWheelBlockEntity entity) { //TODO
+    private static void tickHamster(World world, BlockPos pos, BlockState state, HamsterWheelBlockEntity entity) {
             if (entity.hamster) {
                 ArrayList<Entity> list = Lists.newArrayList();
-                if ( HamsterWheelBlockEntity.releaseHamster(world, pos, state, entity.hamster, list, false)) { //TODO endurance
+                if (entity.endurance < 250 && HamsterWheelBlockEntity.releaseHamster(world, pos, state, entity.hamster, list, false)) {
                     entity.hamster = false;
                     if (world != null) {
                         world.setBlockState(pos, world.getBlockState(pos).with(HamsterWheel.EMPTY, true));
                     }
                     return;
                 }
-                //TODO endurance--
+                entity.endurance--;
             }
     }
 
@@ -68,6 +69,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     protected void writeNbt(NbtCompound nbt) {
         super.writeNbt(nbt);
         nbt.putBoolean(HAMSTER_KEY, this.hamster);
+        nbt.putInt(ENDURANCE_KEY, this.endurance);
     }
 
     @Override
@@ -77,6 +79,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
         if (nbt.contains(HAMSTER_KEY)) {
             this.hamster = nbt.getBoolean(HAMSTER_KEY);
         }
+        this.endurance = nbt.getInt(ENDURANCE_KEY);
     }
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
@@ -98,8 +101,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
     /* HAMSTER STUFF */
 
     public void tryEnterWheel(HamsterEntity hamster, int endurance) {
-        if (this.hamster || world.getBlockState(pos).getBlock() != ModBlocks.HAMSTER_WHEEL) {
-            System.out.println("STOOOOP");
+        if (this.hamster || world.getBlockState(pos).getBlock() != ModBlocks.HAMSTER_WHEEL && endurance > 1500) {
             return;
         }
         hamster.stopRiding();
@@ -115,7 +117,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
                 Direction direction = blockState.get(HamsterWheel.FACING);
 
                 double x = (double)pos.getX() + 0.5;
-                double y = (double)pos.getY() + 0.2;
+                double y = (double)pos.getY() + 0.15;
                 double z = (double)pos.getZ() + 0.5;
                 float yaw;
                 float pitch = 0f;
@@ -141,6 +143,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
 
     public void addHamster(HamsterEntity hamster, int endurance) {
         this.hamster = true;
+        this.endurance = endurance;
         world.setBlockState(pos, world.getBlockState(pos).with(HamsterWheel.EMPTY, false));
 
     }
@@ -149,6 +152,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
         ArrayList<Entity> list = Lists.newArrayList();
         if (releaseHamster(this.world, this.pos, state, hamster, list, urgent)) {
             hamster = false;
+            endurance = 0;
             BlockState blockState = world.getBlockState(pos);
             if (world != null && blockState.getBlock() == ModBlocks.HAMSTER_WHEEL) {
                 world.setBlockState(pos, blockState.with(HamsterWheel.EMPTY, true));
@@ -158,7 +162,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
 
     private static boolean releaseHamster(World world, BlockPos pos, BlockState state, boolean hamsterBoolean, @Nullable List<Entity> entities, boolean urgent) {
         boolean bl;
-        if (!hamsterBoolean || !urgent) { //TODO  && hamster.endurance > 1000
+        if (!hamsterBoolean || !urgent ) {
             return false;
         }
         Direction direction = state.get(HamsterWheel.FACING);
