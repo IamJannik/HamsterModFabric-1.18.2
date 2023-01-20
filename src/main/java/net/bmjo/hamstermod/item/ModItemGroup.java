@@ -7,5 +7,5 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 
 public class ModItemGroup {
-    public static final ItemGroup HAMSTER = FabricItemGroupBuilder.build(new Identifier(HamsterMod.MOD_ID, "hamster"), () -> new ItemStack((ModItems.BALL_BEARING)));
+    public static final ItemGroup HAMSTER = FabricItemGroupBuilder.build(new Identifier(HamsterMod.MOD_ID, "hamster"), () -> new ItemStack((ModItems.HAMSTER_SPAWN_EGG)));
 }

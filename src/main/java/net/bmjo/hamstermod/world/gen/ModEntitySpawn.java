@@ -13,7 +13,7 @@ import net.minecraft.world.biome.Biome;
 public class ModEntitySpawn {
     public static void addEntitySpawn() {
         BiomeModifications.addSpawn(BiomeSelectors.categories(Biome.Category.PLAINS, Biome.Category.FOREST),
-                SpawnGroup.AMBIENT, ModEntities.HAMSTER, 100, 1, 2);
+                SpawnGroup.AMBIENT, ModEntities.HAMSTER, 50, 1, 2);
 
         SpawnRestrictionAccessor.callRegister(ModEntities.HAMSTER, SpawnRestriction.Location.ON_GROUND,
                 Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, AnimalEntity::isValidNaturalSpawn);

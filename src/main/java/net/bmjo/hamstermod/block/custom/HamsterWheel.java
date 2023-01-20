@@ -11,6 +11,7 @@ import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.DirectionProperty;
@@ -141,14 +142,13 @@ public class HamsterWheel extends BlockWithEntity implements BlockEntityProvider
     public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
         if (!world.isClient) {
             if (hand == Hand.MAIN_HAND) {
-                world.setBlockState(pos, state.with(EMPTY, true), Block.NOTIFY_ALL);
                 BlockEntity blockEntity = world.getBlockEntity(pos);
-                if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity) {
+                if (blockEntity instanceof HamsterWheelBlockEntity hamsterWheelBlockEntity && !state.get(EMPTY)) {
+                    world.setBlockState(pos, state.with(EMPTY, true), Block.NOTIFY_ALL);
                     hamsterWheelBlockEntity.tryReleaseHamster(state, true);
                 }
             }
         }
-
         return ActionResult.SUCCESS;
     }
 

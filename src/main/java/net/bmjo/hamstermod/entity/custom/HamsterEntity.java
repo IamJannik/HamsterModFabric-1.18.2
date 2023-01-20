@@ -58,19 +58,24 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     public static final String SITTING_KEY = "IsSitting";
     public static final String VARIANT_KEY = "Variant";
     public static final String WHEEL_POS_KEY = "WheelPos";
+    public static final String IN_WHEEL_KEY = "InWHeel";
     public static final String ENDURANCE_KEY = "Endurance";
     public static final String CANNOT_ENTER_WHEEL_TICKS_KEY = "CannotEnterWheelTicks";
 
     private AnimationFactory factory = new AnimationFactory(this);
+
     @Nullable
     private BlockPos wheelPos;
-    int endurance = 2000;
+    public int endurance;
     private int cannotEnterWheelTicks;
     int ticksLeftToFindWheel;
     MoveToWheelGoal moveToWheelGoal;
 
     public HamsterEntity(EntityType<? extends TameableEntity> entityType, World world) {
         super(entityType, world);
+        setIsInWheel(false);
+        endurance = 2000;
+        cannotEnterWheelTicks = 100;
     }
 
     /* GETTER AND SETTER */
@@ -79,6 +84,13 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     @Debug
     public BlockPos getWheelPos() {
         return this.wheelPos;
+    }
+
+    public boolean isInWheel() {
+        return this.dataTracker.get(IN_WHEEL);
+    }
+    public void setIsInWheel(boolean inWheel) {
+        this.dataTracker.set(IN_WHEEL, inWheel);
     }
 
     public void setCannotEnterWheelTicks(int cannotEnterWheelTicks) {
@@ -107,6 +119,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
                 .add(EntityAttributes.GENERIC_MOVEMENT_SPEED, 0.25f);
     }
 
+    @Override
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
         this.goalSelector.add(1, new EscapeDangerGoal(this, 1.25));
@@ -126,7 +139,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     }
 
     private <E extends IAnimatable> PlayState predicate(AnimationEvent<E> event) {
-        if (event.isMoving()) {
+        if (event.isMoving() || isInWheel()) {
             event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster.walk", true));
             return PlayState.CONTINUE;
         }
@@ -135,13 +148,29 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
             return PlayState.CONTINUE;
         }
 
-        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster.idle", true));
+        event.getController().setAnimation(new AnimationBuilder().addAnimation("animation.hamster.walk", true)); //TODO
         return PlayState.CONTINUE;
     }
 
     @Override
     public void registerControllers(AnimationData animationData) {
         animationData.addAnimationController(new AnimationController(this, "controller",0, this::predicate));
+    }
+
+    @Override
+    public boolean damage(DamageSource source, float amount) {
+        if (this.isInvulnerable() && source != DamageSource.OUT_OF_WORLD) {
+            return false;
+        }
+        return super.damage(source, amount);
+    }
+
+    public boolean isInvulnerable() {
+        return isInWheel();
+    }
+
+    public boolean cannotDespawn() {
+        return isInWheel();
     }
 
     @Override
@@ -171,6 +200,8 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
     /* TAMABLE ENTITY*/
     private static final TrackedData<Boolean> SITTING =
+            DataTracker.registerData(HamsterEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> IN_WHEEL =
             DataTracker.registerData(HamsterEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     @Override
@@ -240,6 +271,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         super.writeCustomDataToNbt(nbt);
         nbt.putBoolean(SITTING_KEY, this.dataTracker.get(SITTING));
         nbt.putInt(VARIANT_KEY, this.getTypeVariant());
+        nbt.putBoolean(IN_WHEEL_KEY, this.dataTracker.get(IN_WHEEL));
 
         if (this.hasWheel()) {
             nbt.put(WHEEL_POS_KEY, NbtHelper.fromBlockPos(getWheelPos()));
@@ -255,6 +287,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
         this.dataTracker.set(SITTING, nbt.getBoolean(SITTING_KEY));
         this.dataTracker.set(DATA_ID_TYPE_VARIANT, nbt.getInt(VARIANT_KEY));
+        this.dataTracker.set(IN_WHEEL, nbt.getBoolean(IN_WHEEL_KEY));
 
         if (nbt.contains(WHEEL_POS_KEY)) {
             this.wheelPos = NbtHelper.toBlockPos(nbt.getCompound(WHEEL_POS_KEY));
@@ -276,6 +309,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
     protected void initDataTracker() {
         super.initDataTracker();
         this.dataTracker.startTracking(SITTING, false);
+        this.dataTracker.startTracking(IN_WHEEL, false);
         this.dataTracker.startTracking(DATA_ID_TYPE_VARIANT, 0);
     }
 
@@ -300,7 +334,7 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
         return this.dataTracker.get(DATA_ID_TYPE_VARIANT);
     }
 
-    private void setVariant(HamsterVariant variant) {
+    public void setVariant(HamsterVariant variant) {
         this.dataTracker.set(DATA_ID_TYPE_VARIANT, variant.getId() & 255);
     }
 
@@ -308,6 +342,9 @@ public class HamsterEntity extends TameableEntity implements IAnimatable {
 
     @Override
     public void tickMovement() {
+        if (isInWheel()) {
+            return;
+        }
         super.tickMovement();
         if (!this.world.isClient) {
             if (this.cannotEnterWheelTicks > 0) {

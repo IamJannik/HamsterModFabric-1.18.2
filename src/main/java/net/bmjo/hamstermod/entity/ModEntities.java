@@ -10,6 +10,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public class ModEntities {
-    public static final EntityType<HamsterEntity> HAMSTER = Registry.register(Registry.ENTITY_TYPE, new Identifier(HamsterMod.MOD_ID, "hamster"), FabricEntityTypeBuilder.create(SpawnGroup.AMBIENT, HamsterEntity::new)
+    public static final EntityType<HamsterEntity> HAMSTER = Registry.register(Registry.ENTITY_TYPE, new Identifier(HamsterMod.MOD_ID, "hamster"), FabricEntityTypeBuilder.create(SpawnGroup.CREATURE, HamsterEntity::new)
             .dimensions(EntityDimensions.fixed(0.4f, 0.3f)).build());
 }

@@ -17,6 +17,7 @@ public class ModBlocks {
 
     public static final Block HAMSTER_WHEEL = registerBlockWithoutBlockItem("hamster_wheel",
             new HamsterWheel(FabricBlockSettings.of(Material.WOOD).strength(3f).nonOpaque()));
+
     public static final Block THE_CUBE = registerBlock("the_cube",
             new Block(FabricBlockSettings.of(Material.METAL).strength(6f).requiresTool()), ModItemGroup.HAMSTER);
 
