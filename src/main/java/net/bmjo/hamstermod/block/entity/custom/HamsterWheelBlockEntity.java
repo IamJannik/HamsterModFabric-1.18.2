@@ -179,6 +179,7 @@ public class HamsterWheelBlockEntity extends BlockEntity implements IAnimatable 
             hamster.refreshPositionAndAngles(e, g, h, hamster.getYaw(), hamster.getPitch());
 
             hamster.setIsInWheel(false);
+            hamster.setCannotEnterWheelTicks(1500);
 
             world.playSound(null, pos, SoundEvents.BLOCK_BARREL_CLOSE, SoundCategory.BLOCKS, 1.0f, 1.0f);
         }
